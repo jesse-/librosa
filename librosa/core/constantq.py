@@ -5,7 +5,6 @@ from __future__ import division
 
 import warnings
 import numpy as np
-from numba import jit
 
 from . import audio
 from .fft import get_fftlib
@@ -1172,7 +1171,6 @@ def __early_downsample(
     return y, sr, hop_length
 
 
-@jit(nopython=True, cache=True)
 def __num_two_factors(x):
     """Return how many times integer x can be evenly divided by 2.
 

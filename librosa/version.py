@@ -37,7 +37,6 @@ def show_versions():
         "decorator",
         "soundfile",
         "resampy",
-        "numba",
     ]
 
     extra_deps = [

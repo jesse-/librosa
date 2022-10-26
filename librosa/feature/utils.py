@@ -4,7 +4,6 @@
 
 import numpy as np
 import scipy.signal
-from numba import jit
 
 from .._cache import cache
 from ..util.exceptions import ParameterError
@@ -265,7 +264,6 @@ def stack_memory(data, n_steps=2, delay=1, **kwargs):
     return history
 
 
-@jit(nopython=True, cache=True)
 def __stack(history, data, n_steps, delay):
     """Memory-stacking helper function.
 

@@ -7,7 +7,6 @@ import scipy.ndimage
 import scipy.sparse
 
 import numpy as np
-import numba
 from numpy.lib.stride_tricks import as_strided
 
 from .._cache import cache
@@ -1844,7 +1843,6 @@ def cyclic_gradient(data, edge_order=1, axis=-1):
     return grad[tuple(slices)]
 
 
-@numba.jit(nopython=True, cache=True)
 def __shear_dense(X, factor=+1, axis=-1):
     """Numba-accelerated shear for dense (ndarray) arrays"""
 

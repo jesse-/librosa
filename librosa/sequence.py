@@ -34,7 +34,6 @@ Transition matrices
 
 import numpy as np
 from scipy.spatial.distance import cdist
-from numba import jit
 from .util import pad_center, fill_off_diagonal
 from .util.exceptions import ParameterError
 from .filters import get_window
@@ -337,7 +336,6 @@ def dtw(
         return return_values[0]
 
 
-@jit(nopython=True, cache=True)
 def __dtw_calc_accu_cost(
     C, D, steps, step_sizes_sigma, weights_mul, weights_add, max_0, max_1
 ):  # pragma: no cover
@@ -411,7 +409,6 @@ def __dtw_calc_accu_cost(
     return D, steps
 
 
-@jit(nopython=True, cache=True)
 def __dtw_backtracking(steps, step_sizes_sigma, subseq, start=None):  # pragma: no cover
     """Backtrack optimal warping path.
 
@@ -675,7 +672,6 @@ def rqa(sim, gap_onset=1, gap_extend=1, knight_moves=True, backtrack=True):
     return score
 
 
-@jit(nopython=True, cache=True)
 def __rqa_dp(sim, gap_onset, gap_extend, knight):  # pragma: no cover
     """RQA dynamic programming implementation"""
 
@@ -880,7 +876,6 @@ def __rqa_backtrack(score, pointers):
     return np.asarray(path, dtype=np.uint)
 
 
-@jit(nopython=True, cache=True)
 def _viterbi(log_prob, log_trans, log_p_init, state, value, ptr):  # pragma: no cover
     """Core Viterbi algorithm.
 
@@ -930,7 +925,6 @@ def _viterbi(log_prob, log_trans, log_p_init, state, value, ptr):  # pragma: no 
 
         trans_out = value[t - 1] + log_trans.T
 
-        # Unroll the max/argmax loop to enable numba support
         for j in range(n_states):
             ptr[t, j] = np.argmax(trans_out[j])
             # value[t, j] = log_prob[t, j] + np.max(trans_out[j])

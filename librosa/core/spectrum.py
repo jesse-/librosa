@@ -9,8 +9,6 @@ import scipy.ndimage
 import scipy.signal
 import scipy.interpolate
 
-from numba import jit
-
 from . import convert
 from .fft import get_fftlib
 from .audio import resample
@@ -438,9 +436,8 @@ def istft(
     return y
 
 
-@jit(nopython=True, cache=True)
 def __overlap_add(y, ytmp, hop_length):
-    # numba-accelerated overlap add for inverse stft
+    # overlap add for inverse stft
     # y is the pre-allocated output buffer
     # ytmp is the windowed inverse-stft frames
     # hop_length is the hop-length of the STFT analysis

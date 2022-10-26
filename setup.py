@@ -43,14 +43,12 @@ setup(
         'joblib >= 0.14',
         'decorator >= 3.0.0',
         'resampy >= 0.2.2',
-        'numba >= 0.43.0',
         'soundfile >= 0.9.0',
         'pooch >= 1.0'
     ],
     python_requires='>=3.6',
     extras_require={
         'docs': ['numpydoc', 'sphinx!=1.3.1', 'sphinx_rtd_theme==0.5.*',
-                 'numba < 0.50',
                  'matplotlib >= 2.0.0, < 3.3',
                  'sphinx-multiversion==0.2.3',
                  'sphinx-gallery>=0.7',

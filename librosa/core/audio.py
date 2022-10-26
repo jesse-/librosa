@@ -11,7 +11,6 @@ import numpy as np
 import scipy.signal
 import resampy
 
-from numba import jit
 from .fft import get_fftlib
 from .convert import frames_to_samples, time_to_samples
 from .._cache import cache
@@ -882,7 +881,6 @@ def lpc(y, order):
     return __lpc(y, order)
 
 
-@jit(nopython=True)
 def __lpc(y, order):
     # This implementation follows the description of Burg's algorithm given in
     # section III of Marple's paper referenced in the docstring.
