@@ -42,7 +42,6 @@ setup(
         'scikit-learn >= 0.14.0, != 0.19.0',
         'joblib >= 0.14',
         'decorator >= 3.0.0',
-        'resampy >= 0.2.2',
         'soundfile >= 0.9.0',
         'pooch >= 1.0'
     ],

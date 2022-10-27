@@ -36,7 +36,6 @@ def show_versions():
         "joblib",
         "decorator",
         "soundfile",
-        "resampy",
     ]
 
     extra_deps = [

@@ -9,7 +9,6 @@ import soundfile as sf
 import audioread
 import numpy as np
 import scipy.signal
-import resampy
 
 from .fft import get_fftlib
 from .convert import frames_to_samples, time_to_samples
@@ -35,8 +34,8 @@ __all__ = [
 ]
 
 # Resampling bandwidths as percentage of Nyquist
-BW_BEST = resampy.filters.get_filter("kaiser_best")[2]
-BW_FASTEST = resampy.filters.get_filter("kaiser_fast")[2]
+BW_BEST = np.array(0.9173473712608761)  # resampy.filters.get_filter("kaiser_best")[2]
+BW_FASTEST = np.array(0.8682120388377784)  # resampy.filters.get_filter("kaiser_fast")[2]
 
 
 # -- CORE ROUTINES --#
@@ -49,7 +48,7 @@ def load(
     offset=0.0,
     duration=None,
     dtype=np.float32,
-    res_type="kaiser_best",
+    res_type="fft",
 ):
     """Load an audio file as a floating point time series.
 
@@ -92,7 +91,7 @@ def load(
         resample type (see note)
 
         .. note::
-            By default, this uses `resampy`'s high-quality mode ('kaiser_best').
+            By default, this uses scipy's FFT resampling mode ('fft').
 
             For alternative resampling modes, see `resample`
 
@@ -457,11 +456,11 @@ def to_mono(y):
 
 @cache(level=20)
 def resample(
-    y, orig_sr, target_sr, res_type="kaiser_best", fix=True, scale=False, **kwargs
+    y, orig_sr, target_sr, res_type="scipy", fix=True, scale=False, **kwargs
 ):
     """Resample a time series from orig_sr to target_sr
 
-    By default, this uses a high-quality (but relatively slow) method ('kaiser_best')
+    By default, this uses a high-quality (but relatively slow) method ('scipy')
     for band-limited sinc interpolation.  The alternate ``res_type`` values listed below
     offer different trade-offs of speed and quality.
 
@@ -480,11 +479,7 @@ def resample(
         resample type (see note)
 
         .. note::
-            By default, this uses `resampy`'s high-quality mode ('kaiser_best').
-
-            To use a faster method, set ``res_type='kaiser_fast'``.
-
-            To use `scipy.signal.resample`, set ``res_type='fft'`` or ``res_type='scipy'``. (slow)
+            By default, this uses `scipy.signal.resample`, set ``res_type='fft'`` or ``res_type='scipy'``. (slow)
 
             To use `scipy.signal.resample_poly`, set ``res_type='polyphase'``. (fast)
 
@@ -526,7 +521,6 @@ def resample(
     --------
     librosa.util.fix_length
     scipy.signal.resample
-    resampy
     samplerate.converters.resample
 
     Notes
@@ -580,7 +574,7 @@ def resample(
         # We have to transpose here to match libsamplerate
         y_hat = samplerate.resample(y.T, ratio, converter_type=res_type).T
     else:
-        y_hat = resampy.resample(y, orig_sr, target_sr, filter=res_type, axis=-1)
+        raise ParameterError(f"Resampling type {res_type} is not supported")
 
     if fix:
         y_hat = util.fix_length(y_hat, n_samples, **kwargs)
