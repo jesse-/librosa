@@ -32,11 +32,6 @@ import scipy
 import scipy.signal
 import scipy.ndimage
 
-import sklearn
-import sklearn.cluster
-import sklearn.feature_extraction
-import sklearn.neighbors
-
 from ._cache import cache
 from . import util
 from .filters import diagonal_filter
@@ -66,7 +61,7 @@ def cross_similarity(
 ):
     """Compute cross-similarity from one data sequence to a reference sequence.
 
-    The output is a matrix ``xsim``, where ``xsim[i, j]`` is non-zero 
+    The output is a matrix ``xsim``, where ``xsim[i, j]`` is non-zero
     if ``data_ref[:, i]`` is a k-nearest neighbor of ``data[:, j]``.
 
 
@@ -167,93 +162,7 @@ def cross_similarity(
     >>> fig.colorbar(imgsim, ax=ax[0], orientation='horizontal', ticks=[0, 1])
     >>> fig.colorbar(imgaff, ax=ax[1], orientation='horizontal')
     """
-    data_ref = np.atleast_2d(data_ref)
-    data = np.atleast_2d(data)
-
-    if data_ref.shape[0] != data.shape[0]:
-        raise ParameterError("data_ref and data must have the same first dimension")
-
-    # swap data axes so the feature axis is last
-    data_ref = np.swapaxes(data_ref, -1, 0)
-    n_ref = data_ref.shape[0]
-    data_ref = data_ref.reshape((n_ref, -1))
-
-    data = np.swapaxes(data, -1, 0)
-    n = data.shape[0]
-    data = data.reshape((n, -1))
-
-    if mode not in ["connectivity", "distance", "affinity"]:
-        raise ParameterError(
-            (
-                "Invalid mode='{}'. Must be one of "
-                "['connectivity', 'distance', "
-                "'affinity']"
-            ).format(mode)
-        )
-    if k is None:
-        k = min(n_ref, 2 * np.ceil(np.sqrt(n_ref)))
-
-    k = int(k)
-
-    if bandwidth is not None:
-        if bandwidth <= 0:
-            raise ParameterError(
-                "Invalid bandwidth={}. " "Must be strictly positive.".format(bandwidth)
-            )
-
-    # Build the neighbor search object
-    # `auto` mode does not work with some choices of metric.  Rather than special-case
-    # those here, we instead use a fall-back to brute force if auto fails.
-    try:
-        knn = sklearn.neighbors.NearestNeighbors(
-            n_neighbors=min(n_ref, k), metric=metric, algorithm="auto"
-        )
-    except ValueError:
-        knn = sklearn.neighbors.NearestNeighbors(
-            n_neighbors=min(n_ref, k), metric=metric, algorithm="brute"
-        )
-
-    knn.fit(data_ref)
-
-    # Get the knn graph
-    if mode == "affinity":
-        # sklearn's nearest neighbor doesn't support affinity,
-        # so we use distance here and then do the conversion post-hoc
-        kng_mode = "distance"
-    else:
-        kng_mode = mode
-
-    xsim = knn.kneighbors_graph(X=data, mode=kng_mode).tolil()
-
-    # Retain only the top-k links per point
-    for i in range(n):
-        # Get the links from point i
-        links = xsim[i].nonzero()[1]
-
-        # Order them ascending
-        idx = links[np.argsort(xsim[i, links].toarray())][0]
-
-        # Everything past the kth closest gets squashed
-        xsim[i, idx[k:]] = 0
-
-    # Convert a compressed sparse row (CSR) format
-    xsim = xsim.tocsr()
-    xsim.eliminate_zeros()
-
-    if mode == "connectivity":
-        xsim = xsim.astype(np.bool)
-    elif mode == "affinity":
-        if bandwidth is None:
-            bandwidth = np.nanmedian(xsim.max(axis=1).data)
-        xsim.data[:] = np.exp(xsim.data / (-1 * bandwidth))
-
-    # Transpose to n_ref by n
-    xsim = xsim.T
-
-    if not sparse:
-        xsim = xsim.toarray()
-
-    return xsim
+    raise RuntimeError("Sorry, this function doesn't work because it requires scikit-learn")
 
 
 @cache(level=30)
@@ -406,116 +315,7 @@ def recurrence_matrix(
     >>> fig.colorbar(imgsim, ax=ax[0], orientation='horizontal', ticks=[0, 1])
     >>> fig.colorbar(imgaff, ax=ax[1], orientation='horizontal')
     """
-
-    data = np.atleast_2d(data)
-
-    # Swap observations to the first dimension and flatten the rest
-    data = np.swapaxes(data, axis, 0)
-    t = data.shape[0]
-    data = data.reshape((t, -1))
-
-    if width < 1 or width > t:
-        raise ParameterError(
-            "width={} must be at least 1 and at most data.shape[{}]={}".format(
-                width, axis, t
-            )
-        )
-
-    if mode not in ["connectivity", "distance", "affinity"]:
-        raise ParameterError(
-            (
-                "Invalid mode='{}'. Must be one of "
-                "['connectivity', 'distance', "
-                "'affinity']"
-            ).format(mode)
-        )
-    if k is None:
-        if t > 2 * width + 1:
-            k = 2 * np.ceil(np.sqrt(t - 2 * width + 1))
-        else:
-            k = 2
-
-    if bandwidth is not None:
-        if bandwidth <= 0:
-            raise ParameterError(
-                "Invalid bandwidth={}. " "Must be strictly positive.".format(bandwidth)
-            )
-
-    k = int(k)
-
-    # Build the neighbor search object
-    try:
-        knn = sklearn.neighbors.NearestNeighbors(
-            n_neighbors=min(t - 1, k + 2 * width), metric=metric, algorithm="auto"
-        )
-    except ValueError:
-        knn = sklearn.neighbors.NearestNeighbors(
-            n_neighbors=min(t - 1, k + 2 * width), metric=metric, algorithm="brute"
-        )
-
-    knn.fit(data)
-
-    # Get the knn graph
-    if mode == "affinity":
-        kng_mode = "distance"
-    else:
-        kng_mode = mode
-
-    rec = knn.kneighbors_graph(mode=kng_mode).tolil()
-
-    # Remove connections within width
-    for diag in range(-width + 1, width):
-        rec.setdiag(0, diag)
-
-    # Retain only the top-k links per point
-    for i in range(t):
-        # Get the links from point i
-        links = rec[i].nonzero()[1]
-
-        # Order them ascending
-        idx = links[np.argsort(rec[i, links].toarray())][0]
-
-        # Everything past the kth closest gets squashed
-        rec[i, idx[k:]] = 0
-
-    if self:
-        if mode == "connectivity":
-            rec.setdiag(1)
-        elif mode == "affinity":
-            # we need to keep the self-loop in here, but not mess up the
-            # bandwidth estimation
-            #
-            # using negative distances here preserves the structure without changing
-            # the statistics of the data
-            rec.setdiag(-1)
-
-    # symmetrize
-    if sym:
-        # Note: this operation produces a CSR (compressed sparse row) matrix!
-        # This is why we have to do it after filling the diagonal in self-mode
-        rec = rec.minimum(rec.T)
-
-    rec = rec.tocsr()
-    rec.eliminate_zeros()
-
-    if mode == "connectivity":
-        rec = rec.astype(np.bool)
-    elif mode == "affinity":
-        if bandwidth is None:
-            bandwidth = np.nanmedian(rec.max(axis=1).data)
-        # Set all the negatives back to 0
-        # Negatives are temporarily inserted above to preserve the sparsity structure
-        # of the matrix without corrupting the bandwidth calculations
-        rec.data[rec.data < 0] = 0.0
-        rec.data[:] = np.exp(rec.data / (-1 * bandwidth))
-
-    # Transpose to be column-major
-    rec = rec.T
-
-    if not sparse:
-        rec = rec.toarray()
-
-    return rec
+    raise RuntimeError("Sorry, this function doesn't work because it requires scikit-learn")
 
 
 def recurrence_to_lag(rec, pad=True, axis=-1):
@@ -929,33 +729,7 @@ def agglomerative(data, k, clusterer=None, axis=-1):
     >>> ax.legend()
     >>> ax.set(title='Power spectrogram')
     """
-
-    # Make sure we have at least two dimensions
-    data = np.atleast_2d(data)
-
-    # Swap data index to position 0
-    data = np.swapaxes(data, axis, 0)
-
-    # Flatten the features
-    n = data.shape[0]
-    data = data.reshape((n, -1))
-
-    if clusterer is None:
-        # Connect the temporal connectivity graph
-        grid = sklearn.feature_extraction.image.grid_to_graph(n_x=n, n_y=1, n_z=1)
-
-        # Instantiate the clustering object
-        clusterer = sklearn.cluster.AgglomerativeClustering(
-            n_clusters=k, connectivity=grid, memory=cache.memory
-        )
-
-    # Fit the model
-    clusterer.fit(data)
-
-    # Find the change points from the labels
-    boundaries = [0]
-    boundaries.extend(list(1 + np.nonzero(np.diff(clusterer.labels_))[0].astype(int)))
-    return np.asarray(boundaries)
+    raise RuntimeError("Sorry, this function doesn't work because it requires scikit-learn")
 
 
 def path_enhance(

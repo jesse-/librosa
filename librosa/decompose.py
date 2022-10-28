@@ -16,8 +16,6 @@ import numpy as np
 import scipy.sparse
 from scipy.ndimage import median_filter
 
-import sklearn.decomposition
-
 from . import core
 from ._cache import cache
 from . import segment
@@ -145,10 +143,11 @@ def decompose(S, n_components=None, transformer=None, sort=False, fit=True, **kw
     """
 
     if transformer is None:
-        if fit is False:
-            raise ParameterError("fit must be True if transformer is None")
-
-        transformer = sklearn.decomposition.NMF(n_components=n_components, **kwargs)
+        raise ParameterError("This version of librosa doesn't depend on scikit-learn so the parameter transformer is required")
+        # if fit is False:
+        #     raise ParameterError("fit must be True if transformer is None")
+        #
+        # transformer = sklearn.decomposition.NMF(n_components=n_components, **kwargs)
 
     if n_components is None:
         n_components = S.shape[0]

@@ -32,7 +32,6 @@ def show_versions():
         "audioread",
         "numpy",
         "scipy",
-        "sklearn",
         "joblib",
         "decorator",
         "soundfile",

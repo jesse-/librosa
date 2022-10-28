@@ -39,7 +39,6 @@ setup(
         'audioread >= 2.0.0',
         'numpy >= 1.15.0',
         'scipy >= 1.0.0',
-        'scikit-learn >= 0.14.0, != 0.19.0',
         'joblib >= 0.14',
         'decorator >= 3.0.0',
         'soundfile >= 0.9.0',
